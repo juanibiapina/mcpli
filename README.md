@@ -1,6 +1,26 @@
 # mcpli
 
-A command-line interface for interacting with MCP (Model Context Protocol) servers.
+Turn MCP servers into native CLI applications with shell completion.
+
+## Features
+
+- 🔍 **Discoverable** - Tab completion for servers AND tools in your shell
+- 📖 **Self-documenting** - `--help` shows full tool descriptions at every level
+- ⚡ **Instant** - Tools cached locally, no server roundtrip for discovery
+- 🔧 **Familiar** - Works like any CLI you already use (git, kubectl, etc.)
+
+## Quick Start
+
+```bash
+# 1. Add a server (fetches and caches all tools)
+mcpli add myserver https://example.com/mcp/
+
+# 2. Explore available tools
+mcpli myserver --help
+
+# 3. Invoke a tool
+mcpli myserver search '{"query": "hello"}'
+```
 
 ## Installation
 
@@ -16,7 +36,58 @@ cd mcpli
 go build -o mcpli ./cmd/mcpli
 ```
 
-## Usage
+## Discovering Tools
+
+Every server and tool is a native subcommand with built-in help:
+
+```bash
+# See all configured servers
+mcpli --help
+
+# See all tools on a server
+mcpli myserver --help
+
+# See a tool's full description and usage
+mcpli myserver search_products --help
+```
+
+Example output of `mcpli myserver --help`:
+
+```
+Usage:
+  mcpli myserver [command]
+
+Available Commands:
+  get_cart              View everything currently in the shopping cart...
+  search_products       Search products by keyword, filters, or recomm...
+  add_items_to_cart     Put products into the cart for purchase...
+
+Use "mcpli myserver [command] --help" for more information about a command.
+```
+
+## Shell Completion
+
+Enable tab completion for servers and tools:
+
+```bash
+# Bash
+echo 'source <(mcpli completion bash)' >> ~/.bashrc
+
+# Zsh
+echo 'source <(mcpli completion zsh)' >> ~/.zshrc
+
+# Fish
+mcpli completion fish | source
+```
+
+After setup, tab completion works for everything:
+
+```bash
+mcpli <TAB>              # Complete server names
+mcpli myserver <TAB>     # Complete tool names
+```
+
+## Commands
 
 ### Add a server
 
@@ -28,11 +99,11 @@ Headers can include environment variable references using `${VAR_NAME}` syntax:
 
 ```bash
 mcpli add knuspr https://mcp.knuspr.de/mcp/ \
-  --header 'rhl-email: ${ROHLIK_USERNAME}' \
-  --header 'rhl-pass: ${ROHLIK_PASSWORD}'
+  --header 'auth-email: ${MY_EMAIL}' \
+  --header 'auth-pass: ${MY_PASSWORD}'
 ```
 
-This connects to the server, fetches all available tools, and caches them locally for instant invocations.
+This connects to the server, fetches all available tools, and caches them locally.
 
 ### List servers
 
@@ -56,10 +127,10 @@ Examples:
 
 ```bash
 # Tool with no arguments
-mcpli knuspr get_cart
+mcpli myserver get_cart
 
 # Tool with arguments
-mcpli knuspr search_products '{"keyword": "milk"}'
+mcpli myserver search_products '{"keyword": "milk"}'
 ```
 
 ### Update a server
