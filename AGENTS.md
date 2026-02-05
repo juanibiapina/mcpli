@@ -3,7 +3,7 @@
 ## Build
 
 ```bash
-go build -o mcpli ./cmd/mcpli
+go build
 ```
 
 ## Release Process

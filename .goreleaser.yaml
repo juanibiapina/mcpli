@@ -10,7 +10,7 @@ before:
 
 builds:
   - id: mcpli
-    main: ./cmd/mcpli
+    main: .
     binary: mcpli
     env:
       - CGO_ENABLED=0
