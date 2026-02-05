@@ -7,6 +7,7 @@ import (
 
 	"github.com/juanibiapina/mcpli/internal/config"
 	"github.com/juanibiapina/mcpli/internal/mcp"
+	"github.com/juanibiapina/mcpli/internal/terminal"
 	"github.com/juanibiapina/mcpli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -60,6 +61,10 @@ func createServerCommand(name string, server *config.Server) *cobra.Command {
 		Use:   name,
 		Short: fmt.Sprintf("Invoke tools on the %s server", name),
 		Long:  fmt.Sprintf("Server: %s\nURL: %s", server.ServerInfo.Name, server.URL),
+		Run: func(cmd *cobra.Command, args []string) {
+			// When called without subcommand, show the tool list
+			printServerHelp(name, server)
+		},
 	}
 
 	// Add tool subcommands
@@ -67,12 +72,39 @@ func createServerCommand(name string, server *config.Server) *cobra.Command {
 		cmd.AddCommand(createToolCommand(server, tool))
 	}
 
+	// Set custom help template for better tool listing
+	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		printServerHelp(name, server)
+	})
+
 	return cmd
+}
+
+// printServerHelp prints formatted help for a server command
+func printServerHelp(name string, server *config.Server) {
+	termWidth := terminal.GetWidth()
+	descIndent := "      " // 6 spaces for description indent
+
+	fmt.Printf("Server: %s\n", server.ServerInfo.Name)
+	fmt.Printf("URL: %s\n", server.URL)
+	fmt.Println()
+	fmt.Println("Tools:")
+
+	for _, tool := range server.Tools {
+		fmt.Printf("  %s\n", tool.Name)
+		if tool.Description != "" {
+			wrapped := terminal.WrapText(tool.Description, termWidth-len(descIndent), descIndent)
+			fmt.Printf("%s%s\n", descIndent, wrapped)
+		}
+		fmt.Println()
+	}
+
+	fmt.Printf("Use \"mcpli %s <tool> --help\" for more information about a tool.\n", name)
 }
 
 // createToolCommand creates a command for a specific tool
 func createToolCommand(server *config.Server, tool config.Tool) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   tool.Name + " [json-arguments]",
 		Short: truncateDescription(tool.Description, 60),
 		Long:  tool.Description,
@@ -103,6 +135,20 @@ func createToolCommand(server *config.Server, tool config.Tool) *cobra.Command {
 			return nil
 		},
 	}
+
+	// Set explicit help function to avoid inheriting parent's custom help
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		// Print Long description with word wrapping, then usage
+		if c.Long != "" {
+			termWidth := terminal.GetWidth()
+			wrapped := terminal.WrapText(c.Long, termWidth, "")
+			fmt.Println(wrapped)
+			fmt.Println()
+		}
+		fmt.Print(c.UsageString())
+	})
+
+	return cmd
 }
 
 // truncateDescription shortens a description for display

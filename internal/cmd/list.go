@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/juanibiapina/mcpli/internal/config"
+	"github.com/juanibiapina/mcpli/internal/terminal"
 	"github.com/spf13/cobra"
 )
 
@@ -50,8 +51,23 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	fmt.Printf("Server: %s\n", server.ServerInfo.Name)
+	fmt.Printf("URL: %s\n", server.URL)
+	fmt.Println()
+	fmt.Println("Tools:")
+
+	termWidth := terminal.GetWidth()
+	descIndent := "      " // 6 spaces for description indent
+
 	for _, tool := range server.Tools {
-		fmt.Println(tool.Name)
+		fmt.Printf("  %s\n", tool.Name)
+		if tool.Description != "" {
+			wrapped := terminal.WrapText(tool.Description, termWidth-len(descIndent), descIndent)
+			fmt.Printf("%s%s\n", descIndent, wrapped)
+		}
+		fmt.Println()
 	}
+
+	fmt.Printf("Use \"mcpli %s <tool> --help\" for more information about a tool.\n", name)
 	return nil
 }

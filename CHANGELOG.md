@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Improved tool listing output with multi-line, word-wrapped descriptions
+- `mcpli <server>` and `mcpli list <server>` now show full tool descriptions
+- `mcpli <server> <tool> --help` now shows word-wrapped tool descriptions
+- Tool descriptions adapt to terminal width for better readability
+
 ## [1.0.0] - 2026-02-05
 
 ### Added
