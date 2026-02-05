@@ -7,13 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Version management with `--version` flag
-- GitHub Actions for CI and releases
-- GoReleaser configuration with Homebrew tap support
-
-## [0.1.0] - 2026-02-05
+## [1.0.0] - 2026-02-05
 
 ### Added
 
@@ -26,3 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dynamic command generation from server tool schemas
 - Header support with environment variable expansion
 - Configuration stored in `~/.config/mcpli/config.json`
+- Version management with `--version` flag
+- GitHub Actions for CI and releases
+- GoReleaser configuration with Homebrew tap support
