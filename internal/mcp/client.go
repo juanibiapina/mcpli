@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/juanibiapina/mcpli/internal/version"
 )
 
 const (
@@ -183,7 +185,7 @@ func (c *Client) Initialize() (*InitializeResult, error) {
 		"capabilities":    map[string]interface{}{},
 		"clientInfo": map[string]string{
 			"name":    "mcpli",
-			"version": "1.0.0",
+			"version": version.Version,
 		},
 	}
 

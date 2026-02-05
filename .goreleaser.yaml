@@ -1,0 +1,107 @@
+# GoReleaser configuration for mcpli
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+
+builds:
+  - id: mcpli
+    main: ./cmd/mcpli
+    binary: mcpli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Inject version into the binary
+    ldflags:
+      - -s -w
+      - -X github.com/juanibiapina/mcpli/internal/version.Version={{.Version}}
+
+archives:
+  - id: mcpli
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^style:'
+      - 'typo'
+  groups:
+    - title: Features
+      regexp: '^feat:'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^fix:'
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: juanibiapina
+    name: mcpli
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## mcpli {{.Version}}
+
+    Download the appropriate binary for your platform below.
+
+  footer: |
+    ## Installation
+
+    ### Homebrew
+    ```bash
+    brew install juanibiapina/taps/mcpli
+    ```
+
+    ### Manual
+    ```bash
+    # Download the appropriate binary for your platform
+    # Extract and move to your PATH
+    tar -xzf mcpli_{{.Version}}_darwin_arm64.tar.gz
+    sudo mv mcpli /usr/local/bin/
+    ```
+
+    **Full Changelog**: https://github.com/juanibiapina/mcpli/compare/{{.PreviousTag}}...{{.Tag}}
+
+brews:
+  - name: mcpli
+    repository:
+      owner: juanibiapina
+      name: homebrew-taps
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: "https://github.com/juanibiapina/mcpli"
+    description: "MCP CLI - invoke MCP server tools from the command line"
+    license: "MIT"
+    install: |
+      bin.install "mcpli"

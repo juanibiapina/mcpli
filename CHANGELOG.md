@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Version management with `--version` flag
+- GitHub Actions for CI and releases
+- GoReleaser configuration with Homebrew tap support
+
+## [0.1.0] - 2026-02-05
+
+### Added
+
+- Initial release
+- `mcpli add <name> <url>` - Add and initialize MCP servers
+- `mcpli update <name>` - Refresh server tools
+- `mcpli remove <name>` - Remove configured servers
+- `mcpli list` - List all configured servers
+- `mcpli <server> <tool> [json-arguments]` - Invoke server tools
+- Dynamic command generation from server tool schemas
+- Header support with environment variable expansion
+- Configuration stored in `~/.config/mcpli/config.json`

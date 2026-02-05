@@ -7,6 +7,7 @@ import (
 
 	"github.com/juanibiapina/mcpli/internal/config"
 	"github.com/juanibiapina/mcpli/internal/mcp"
+	"github.com/juanibiapina/mcpli/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +33,9 @@ func Execute() {
 }
 
 func init() {
+	// Set version for --version flag
+	rootCmd.Version = version.Version
+
 	// Add built-in commands
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(updateCmd)
