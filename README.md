@@ -24,11 +24,19 @@ mcpli myserver search '{"query": "hello"}'
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install juanibiapina/taps/mcpli
+```
+
+### Go
+
 ```bash
 go install github.com/juanibiapina/mcpli/cmd/mcpli@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```bash
 git clone https://github.com/juanibiapina/mcpli
