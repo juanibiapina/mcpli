@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- OAuth authentication support (RFC 6749 Authorization Code with PKCE) for remote MCP servers
+- Auto-detection of OAuth on 401 during `mcpli add`
+- Automatic token refresh during tool invocation
+- OAuth credentials stored following XDG conventions (`$XDG_STATE_HOME/mcpli/auth.json`) with 0600 permissions
+- `mcpli remove` now cleans up OAuth credentials
+
 ## [1.1.0] - 2026-02-05
 
 ### Changed

@@ -69,7 +69,7 @@ func createServerCommand(name string, server *config.Server) *cobra.Command {
 
 	// Add tool subcommands
 	for _, tool := range server.Tools {
-		cmd.AddCommand(createToolCommand(server, tool))
+		cmd.AddCommand(createToolCommand(name, server, tool))
 	}
 
 	// Set custom help template for better tool listing
@@ -103,7 +103,7 @@ func printServerHelp(name string, server *config.Server) {
 }
 
 // createToolCommand creates a command for a specific tool
-func createToolCommand(server *config.Server, tool config.Tool) *cobra.Command {
+func createToolCommand(serverName string, server *config.Server, tool config.Tool) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   tool.Name + " [json-arguments]",
 		Short: truncateDescription(tool.Description, 60),
@@ -121,8 +121,14 @@ func createToolCommand(server *config.Server, tool config.Tool) *cobra.Command {
 				}
 			}
 
-			// Create client with expanded headers
-			client := mcp.NewClient(server.URL, server.ExpandHeaders())
+			// Resolve headers (including OAuth token if applicable)
+			headers, err := resolveHeaders(serverName, server)
+			if err != nil {
+				return err
+			}
+
+			// Create client
+			client := mcp.NewClient(server.URL, headers)
 
 			// Call the tool
 			result, err := client.CallTool(tool.Name, arguments)

@@ -27,6 +27,7 @@ type ServerInfo struct {
 type Server struct {
 	URL             string            `json:"url"`
 	Headers         map[string]string `json:"headers,omitempty"`
+	OAuth           bool              `json:"oauth,omitempty"`
 	ProtocolVersion string            `json:"protocol_version"`
 	ServerInfo      ServerInfo        `json:"server_info"`
 	Tools           []Tool            `json:"tools"`

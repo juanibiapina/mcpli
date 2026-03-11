@@ -16,6 +16,15 @@ const (
 	ProtocolVersion = "2024-11-05"
 )
 
+// UnauthorizedError is returned when the server responds with 401.
+type UnauthorizedError struct {
+	Body string
+}
+
+func (e *UnauthorizedError) Error() string {
+	return fmt.Sprintf("server returned 401 Unauthorized: %s", e.Body)
+}
+
 // Client is an MCP HTTP/SSE client
 type Client struct {
 	URL     string
@@ -136,13 +145,37 @@ func (c *Client) doRequest(method string, params interface{}, id int) (*jsonRPCR
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusUnauthorized {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, &UnauthorizedError{Body: string(body)}
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("server returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse SSE response
-	return parseSSEResponse(resp.Body)
+	// Parse response based on content type
+	contentType := resp.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "text/event-stream") {
+		return parseSSEResponse(resp.Body)
+	}
+	return parseJSONResponse(resp.Body)
+}
+
+// parseJSONResponse parses a direct JSON-RPC response
+func parseJSONResponse(r io.Reader) (*jsonRPCResponse, error) {
+	body, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var resp jsonRPCResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON-RPC response: %w", err)
+	}
+
+	return &resp, nil
 }
 
 // parseSSEResponse extracts JSON-RPC response from SSE format

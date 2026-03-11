@@ -149,6 +149,24 @@ mcpli myserver get_cart
 mcpli myserver search_products '{"keyword": "milk"}'
 ```
 
+### OAuth Authentication
+
+When a server requires OAuth, mcpli detects the 401 response automatically and starts the authorization flow:
+
+```bash
+mcpli add glean https://contentful-be.glean.com/mcp/default
+# → Detects 401, opens browser for OAuth login
+# → Stores tokens, completes server setup
+```
+
+After authentication, tokens are used transparently when invoking tools. Expired tokens are refreshed automatically. OAuth credentials are stored following XDG conventions (`$XDG_STATE_HOME/mcpli/auth.json`).
+
+If automatic token refresh fails, re-authenticate with:
+
+```bash
+mcpli update <server>
+```
+
 ### Update a server
 
 Refresh the cached tool definitions:

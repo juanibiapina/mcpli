@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/juanibiapina/mcpli/internal/config"
 	"github.com/juanibiapina/mcpli/internal/mcp"
+	"github.com/juanibiapina/mcpli/internal/oauth"
 	"github.com/spf13/cobra"
 )
 
@@ -37,12 +39,47 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("server %q not found", name)
 	}
 
-	// Create client with expanded headers
-	client := mcp.NewClient(server.URL, server.ExpandHeaders())
+	// Resolve headers (including OAuth token if applicable)
+	headers, err := resolveHeaders(name, server)
+	if err != nil && !server.OAuth {
+		return err
+	}
+
+	// Create client
+	client := mcp.NewClient(server.URL, headers)
 
 	// Initialize connection
 	fmt.Printf("Connecting to %s...\n", server.URL)
 	initResult, err := client.Initialize()
+
+	// If OAuth server and initialization failed, try re-authentication
+	if err != nil && server.OAuth {
+		var unauthorizedErr *mcp.UnauthorizedError
+		needsReauth := errors.As(err, &unauthorizedErr)
+		if !needsReauth {
+			// Also re-auth if resolveHeaders failed (e.g. refresh token expired)
+			// and we never got a chance to try the server
+			if headers == nil || headers["Authorization"] == "" {
+				needsReauth = true
+			}
+		}
+
+		if needsReauth {
+			if authErr := oauth.Authenticate(server.URL); authErr != nil {
+				return fmt.Errorf("re-authentication failed: %w", authErr)
+			}
+
+			// Retry with fresh token
+			headers, err = resolveHeaders(name, server)
+			if err != nil {
+				return fmt.Errorf("failed to get token after re-authentication: %w", err)
+			}
+			client = mcp.NewClient(server.URL, headers)
+
+			initResult, err = client.Initialize()
+		}
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}

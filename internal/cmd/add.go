@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/juanibiapina/mcpli/internal/config"
 	"github.com/juanibiapina/mcpli/internal/mcp"
+	"github.com/juanibiapina/mcpli/internal/oauth"
 	"github.com/spf13/cobra"
 )
 
@@ -66,9 +68,33 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	// Initialize connection
 	fmt.Printf("Connecting to %s...\n", url)
+	useOAuth := false
 	initResult, err := client.Initialize()
 	if err != nil {
-		return fmt.Errorf("failed to initialize: %w", err)
+		// Check if server requires OAuth
+		var unauthorizedErr *mcp.UnauthorizedError
+		if !errors.As(err, &unauthorizedErr) {
+			return fmt.Errorf("failed to initialize: %w", err)
+		}
+
+		// Server returned 401, try OAuth flow
+		if err := oauth.Authenticate(url); err != nil {
+			return fmt.Errorf("failed to authenticate: %w", err)
+		}
+		useOAuth = true
+
+		// Retry with OAuth token
+		token, err := oauth.GetValidToken(url)
+		if err != nil {
+			return fmt.Errorf("failed to get token after authentication: %w", err)
+		}
+		expandedHeaders["Authorization"] = "Bearer " + token
+		client = mcp.NewClient(url, expandedHeaders)
+
+		initResult, err = client.Initialize()
+		if err != nil {
+			return fmt.Errorf("failed to initialize after authentication: %w", err)
+		}
 	}
 	fmt.Printf("Connected to %s v%s\n", initResult.ServerInfo.Name, initResult.ServerInfo.Version)
 
@@ -94,6 +120,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	cfg.Servers[name] = &config.Server{
 		URL:             url,
 		Headers:         headers,
+		OAuth:           useOAuth,
 		ProtocolVersion: initResult.ProtocolVersion,
 		ServerInfo: config.ServerInfo{
 			Name:    initResult.ServerInfo.Name,

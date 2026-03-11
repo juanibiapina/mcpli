@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/juanibiapina/mcpli/internal/config"
+	"github.com/juanibiapina/mcpli/internal/oauth"
 	"github.com/spf13/cobra"
 )
 
@@ -28,8 +29,18 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if server exists
-	if _, exists := cfg.Servers[name]; !exists {
+	server, exists := cfg.Servers[name]
+	if !exists {
 		return fmt.Errorf("server %q not found", name)
+	}
+
+	// Clean up OAuth credentials if applicable
+	if server.OAuth {
+		store, err := oauth.LoadStore()
+		if err == nil {
+			store.Delete(server.URL)
+			_ = store.Save()
+		}
 	}
 
 	// Remove server
