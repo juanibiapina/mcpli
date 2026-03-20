@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `mcpli <server> <tool> --help` now prints each tool's full input JSON schema
+
 ## [1.2.0] - 2026-03-11
 
 ### Added
