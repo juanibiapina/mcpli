@@ -41,7 +41,7 @@ brew install juanibiapina/taps/mcpli
 ### Go
 
 ```bash
-go install github.com/juanibiapina/mcpli/cmd/mcpli@latest
+go install github.com/juanibiapina/mcpli@latest
 ```
 
 ### Build from source
