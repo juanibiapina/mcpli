@@ -19,7 +19,7 @@
             pname = "mcpli";
             version = version;
             src = ./.;
-            vendorHash = "sha256-YmYrXZSwhLhnmCe0oFtstCcCV6tAi9isTkzOSWHS2aQ=";
+            vendorHash = "sha256-uYMhh1AHUtqA2yWeYXmtzIKnbKvhOMoFKJ33sWhFsYk=";
             ldflags = [ "-s" "-w" "-X github.com/juanibiapina/mcpli/internal/version.Version=${version}" ];
           };
         }
