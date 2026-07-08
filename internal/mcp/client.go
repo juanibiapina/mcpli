@@ -27,9 +27,10 @@ func (e *UnauthorizedError) Error() string {
 
 // Client is an MCP HTTP/SSE client
 type Client struct {
-	URL     string
-	Headers map[string]string
-	client  *http.Client
+	URL       string
+	Headers   map[string]string
+	client    *http.Client
+	sessionID string
 }
 
 // NewClient creates a new MCP client
@@ -108,20 +109,10 @@ type ListToolsResult struct {
 	Tools []Tool `json:"tools"`
 }
 
-// doRequest sends a JSON-RPC request and parses the SSE response
-func (c *Client) doRequest(method string, params interface{}, id int) (*jsonRPCResponse, error) {
-	req := jsonRPCRequest{
-		JSONRPC: "2.0",
-		Method:  method,
-		Params:  params,
-		ID:      id,
-	}
-
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
+// newRequest builds a POST request carrying the given JSON body, with the
+// shared MCP headers (Content-Type, Accept, custom headers, session id) and a
+// GetBody so redirects can re-read the body.
+func (c *Client) newRequest(body []byte) (*http.Request, error) {
 	httpReq, err := http.NewRequest("POST", c.URL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -139,11 +130,46 @@ func (c *Client) doRequest(method string, params interface{}, id int) (*jsonRPCR
 		httpReq.Header.Set(k, v)
 	}
 
+	if c.sessionID != "" {
+		httpReq.Header.Set("Mcp-Session-Id", c.sessionID)
+	}
+
+	return httpReq, nil
+}
+
+// captureSession stores the Mcp-Session-Id header from a response, if present.
+func (c *Client) captureSession(resp *http.Response) {
+	if id := resp.Header.Get("Mcp-Session-Id"); id != "" {
+		c.sessionID = id
+	}
+}
+
+// doRequest sends a JSON-RPC request and parses the SSE response
+func (c *Client) doRequest(method string, params interface{}, id int) (*jsonRPCResponse, error) {
+	req := jsonRPCRequest{
+		JSONRPC: "2.0",
+		Method:  method,
+		Params:  params,
+		ID:      id,
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(body)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := c.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	c.captureSession(resp)
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		body, _ := io.ReadAll(resp.Body)
@@ -161,6 +187,51 @@ func (c *Client) doRequest(method string, params interface{}, id int) (*jsonRPCR
 		return parseSSEResponse(resp.Body)
 	}
 	return parseJSONResponse(resp.Body)
+}
+
+// doNotify sends a JSON-RPC notification (no id, no response body expected).
+func (c *Client) doNotify(method string, params interface{}) error {
+	notification := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"method":  method,
+	}
+	if params != nil {
+		notification["params"] = params
+	}
+
+	body, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification: %w", err)
+	}
+
+	httpReq, err := c.newRequest(body)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	c.captureSession(resp)
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		body, _ := io.ReadAll(resp.Body)
+		return &UnauthorizedError{Body: string(body)}
+	}
+
+	// Spec mandates 202 Accepted with an empty body; accept 200 too.
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("server returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
 
 // parseJSONResponse parses a direct JSON-RPC response
@@ -234,6 +305,12 @@ func (c *Client) Initialize() (*InitializeResult, error) {
 	var result InitializeResult
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse initialize result: %w", err)
+	}
+
+	// Complete the lifecycle handshake: servers that enforce the MCP
+	// initialization lifecycle reject method calls until this arrives.
+	if err := c.doNotify("notifications/initialized", nil); err != nil {
+		return nil, fmt.Errorf("failed to send initialized notification: %w", err)
 	}
 
 	return &result, nil

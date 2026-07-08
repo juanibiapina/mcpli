@@ -135,6 +135,13 @@ func createToolCommand(serverName string, server *config.Server, tool config.Too
 			// Create client
 			client := mcp.NewClient(server.URL, headers)
 
+			// Run the initialization handshake so servers that enforce the
+			// MCP lifecycle (and any session id they issue) are honored
+			// before calling the tool.
+			if _, err := client.Initialize(); err != nil {
+				return failWithToolHelp(cmd, err)
+			}
+
 			// Call the tool
 			result, err := client.CallTool(tool.Name, arguments)
 			if err != nil {

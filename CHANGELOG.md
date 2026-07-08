@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Servers that enforce the MCP initialization lifecycle (e.g. incident.io) now work: mcpli sends the `notifications/initialized` notification after `initialize` and replays the server's session id, so `tools/list` and tool calls are no longer rejected as "invalid during session initialization"
+
 ## [1.3.0] - 2026-03-20
 
 ### Changed
