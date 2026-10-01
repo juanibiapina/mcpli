@@ -1,5 +1,7 @@
 # mcpli
 
+> **Deprecated:** mcpli is no longer maintained because [Pi](https://pi.dev/) now supports MCP directly. Use Pi’s built-in MCP support instead. See [“You Said No MCP!”](https://earendil.com/posts/you-said-no-mcp/) for the announcement.
+
 **One command to turn any MCP server into a CLI tool.**
 
 ```bash
